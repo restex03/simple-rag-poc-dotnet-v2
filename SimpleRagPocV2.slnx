@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Rag.Core/Rag.Core.csproj" />
+    <Project Path="src/Rag.Infra/Rag.Infra.csproj" />
     <Project Path="src/RagApi/RagApi.csproj" />
   </Folder>
   <Folder Name="/tests/">

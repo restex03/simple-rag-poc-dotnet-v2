@@ -13,4 +13,6 @@ public interface IVectorStore
         float[] queryEmbedding,
         int topK,
         CancellationToken cancellationToken = default);
+
+
 }
