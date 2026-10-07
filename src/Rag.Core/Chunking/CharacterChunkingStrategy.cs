@@ -55,9 +55,9 @@ public class CharacterChunkingStrategy : IChunkingStrategy
                 _chunkSize,
                 remainingLength);
 
-            var textChunk = document.Content.Substring(
-                start,
-                readLength);
+            var textChunk = document.Content
+                .Substring(start, readLength)
+                .Trim();
 
             if (textChunk.IsNullOrWhitespace())
             {

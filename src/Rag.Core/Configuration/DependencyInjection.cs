@@ -14,7 +14,6 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton<IChunkingStrategy, CharacterChunkingStrategy>();
         services.AddSingleton<RagService>();
-        services.AddSingleton<IEmbeddingGenerator, EmbeddingGenerator>();
         services.AddSingleton<IChatCompletionService, ChatCompletionService>();
 
         return services;

@@ -1,18 +1,18 @@
 using System.Security.Cryptography;
 using System.Text;
-
 using Rag.Core.Abstractions;
 using Rag.Core.Models;
+using Rag.Infra.Gateways;
 
 namespace Rag.Infra.Qdrant;
 
 public sealed class QdrantVectorStore : IVectorStore
 {
-    private const string CollectionName = "documents";
+    private const string CollectionName = "document-chunks";
 
-    private readonly QdrantGateway _gateway;
+    private readonly IQdrantGateway _gateway;
 
-    public QdrantVectorStore(QdrantGateway gateway)
+    public QdrantVectorStore(IQdrantGateway gateway)
     {
         _gateway = gateway;
     }
@@ -22,10 +22,15 @@ public sealed class QdrantVectorStore : IVectorStore
         float[] embedding,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(chunk);
+        ArgumentNullException.ThrowIfNull(embedding);
+
         var point = new QdrantPoint
         {
             Id = CreatePointId(chunk.ChunkId),
+
             Vector = embedding,
+
             Payload = new QdrantPayload
             {
                 DocumentId = chunk.DocumentId,
@@ -51,6 +56,15 @@ public sealed class QdrantVectorStore : IVectorStore
         int topK,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(queryEmbedding);
+
+        if (topK <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(topK),
+                "topK must be greater than zero.");
+        }
+
         var request = new QdrantQueryRequest
         {
             Query = queryEmbedding,
@@ -63,7 +77,7 @@ public sealed class QdrantVectorStore : IVectorStore
             request,
             cancellationToken);
 
-        if (response?.Result.Points is null)
+        if (response?.Result?.Points is null)
             return [];
 
         return response.Result.Points

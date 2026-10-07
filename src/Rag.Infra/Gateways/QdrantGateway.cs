@@ -1,8 +1,9 @@
 using System.Net.Http.Json;
+using Rag.Infra.Qdrant;
 
-namespace Rag.Infra.Qdrant;
+namespace Rag.Infra.Gateways;
 
-public sealed class QdrantGateway
+public sealed class QdrantGateway : IQdrantGateway
 {
     private const string ClientName = "Qdrant";
 

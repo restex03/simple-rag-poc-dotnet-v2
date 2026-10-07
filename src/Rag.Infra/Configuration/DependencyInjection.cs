@@ -1,37 +1,67 @@
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
-
-using Rag.Infra.Qdrant;
-using Rag.Infra.Gateways;
+using Microsoft.Extensions.DependencyInjection;
+using OpenSearch.Client;
 using Rag.Core.Abstractions;
+using Rag.Infra.Gateways;
+using Rag.Infra.OpenSearch;
+using Rag.Infra.Qdrant;
+using Rag.Infra.Services;
 
 namespace Rag.Infra.DependencyInjection;
 
 public static class ServiceCollectionExtensions
 {
-    // The 'this' keyword makes this method available on IServiceCollection instances
-    public static IServiceCollection AddRagInfra(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddRagInfra(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
-        services.AddSingleton<IVectorStore, QdrantVectorStore>();
-        services.AddSingleton<IOllamaGateway, OllamaGateway>();
+        // OpenSearch
+        var openSearchOptions = configuration
+            .GetRequiredSection(OpenSearchOptions.SectionName)
+            .Get<OpenSearchOptions>()
+            ?? throw new InvalidOperationException(
+                "OpenSearch configuration is not found.");
 
+        var openSearchSettings = new ConnectionSettings(
+            new Uri(openSearchOptions.BaseAddress));
 
-        var qdrantOptions = configuration.GetRequiredSection(QdrantOptions.SectionName)
-            .Get<QdrantOptions>() ?? throw new InvalidOperationException("Qdrant configuration is not found.");
+        services.AddSingleton<IOpenSearchClient>(
+            new OpenSearchClient(openSearchSettings));
 
-        var ollamaOptions = configuration.GetRequiredSection(OllamaOptions.SectionName)
-                    .Get<OllamaOptions>() ?? throw new InvalidOperationException("Ollama configuration is not found.");
-        services.AddHttpClient<OllamaGateway>(client =>
+        services.AddSingleton<OpenSearchIndexInitializer>();
+
+        services.AddSingleton<IDocumentIndex, OpenSearchDocumentIndex>();
+
+        // Qdrant
+        var qdrantOptions = configuration
+            .GetRequiredSection(QdrantOptions.SectionName)
+            .Get<QdrantOptions>()
+            ?? throw new InvalidOperationException(
+                "Qdrant configuration is not found.");
+
+        services.AddHttpClient<IQdrantGateway, QdrantGateway>(client =>
+        {
+            client.BaseAddress = new Uri(qdrantOptions.BaseAddress);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+
+        services.AddTransient<IVectorStore, QdrantVectorStore>();
+
+        // Ollama
+        var ollamaOptions = configuration
+            .GetRequiredSection(OllamaOptions.SectionName)
+            .Get<OllamaOptions>()
+            ?? throw new InvalidOperationException(
+                "Ollama configuration is not found.");
+
+        services.AddHttpClient<IOllamaGateway, OllamaGateway>(client =>
         {
             client.BaseAddress = new Uri(ollamaOptions.BaseAddress);
             client.Timeout = TimeSpan.FromSeconds(30);
         });
 
-        services.AddHttpClient("Qdrant", client =>
-        {
-            client.BaseAddress = new Uri(qdrantOptions.BaseAddress);
-        });
+        services.AddTransient<IEmbeddingGenerator, EmbeddingGenerator>();
+
         return services;
     }
-
 }
