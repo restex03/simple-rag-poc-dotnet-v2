@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 
@@ -77,11 +78,11 @@ await app.InitializeOpenSearch();
 app.MapPost(
     "/documents",
     async (
-        Document document,
-        IDocumentIndex documentIndex,
+        [FromBody] Document document,
+        [FromServices] IRagService ragService,
         CancellationToken cancellationToken) =>
     {
-        await documentIndex.IndexDocumentAsync(
+        await ragService.IngestAsync(
             document,
             cancellationToken);
 
@@ -98,8 +99,8 @@ app.MapPost(
 app.MapGet(
     "/documents/{id}",
     async (
-        string id,
-        IDocumentIndex documentIndex,
+        [FromRoute] string id,
+        [FromServices] IDocumentIndex documentIndex,
         CancellationToken cancellationToken) =>
     {
         var document = await documentIndex.GetDocumentAsync(
@@ -117,8 +118,8 @@ app.MapGet(
 app.MapPost(
     "/search",
     async (
-        SearchRequest request,
-        IRagService ragService,
+        [FromBody] SearchRequest request,
+        [FromServices] IRagService ragService,
         CancellationToken cancellationToken) =>
     {
         var results = await ragService.SearchAsync(
@@ -136,8 +137,8 @@ app.MapPost(
 app.MapPost(
     "/ask",
     async (
-        RagRequest request,
-        IRagService ragService,
+        [FromBody] RagRequest request,
+        [FromServices] IRagService ragService,
         CancellationToken cancellationToken) =>
     {
 

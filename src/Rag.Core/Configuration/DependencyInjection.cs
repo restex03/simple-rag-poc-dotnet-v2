@@ -13,7 +13,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddRagCore(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<IChunkingStrategy, CharacterChunkingStrategy>();
-        services.AddSingleton<RagService>();
+        services.AddSingleton<IRagService, RagService>();
 
         return services;
     }
