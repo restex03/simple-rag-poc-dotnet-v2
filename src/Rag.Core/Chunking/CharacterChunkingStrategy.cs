@@ -30,8 +30,10 @@ public class CharacterChunkingStrategy : IChunkingStrategy
         this._overlapSize = overlapSize;
     }
 
+
     public IReadOnlyList<DocumentChunk> Chunk(Document document)
     {
+        var chunks = new List<DocumentChunk>();
 
         ArgumentNullException.ThrowIfNull(document);
 
@@ -41,44 +43,28 @@ public class CharacterChunkingStrategy : IChunkingStrategy
         }
 
 
-        var chunks = new List<DocumentChunk>();
 
         var stepSize = _chunkSize - _overlapSize;
-
-        for (int start = 0, chunkIndex = 0;
-             start < document.Content.Length;
-             start += stepSize)
+        var currPosition = 0;
+        var chunkIndex = 0;
+        while (true)
         {
-            var remainingLength = document.Content.Length - start;
+            var readLength = (currPosition + _chunkSize) < document.Content.Length
+                ? _chunkSize
+                : document.Content.Length - currPosition;
 
-            var readLength = Math.Min(
-                _chunkSize,
-                remainingLength);
-
-            var textChunk = document.Content
-                .Substring(start, readLength)
-                .Trim();
-
-            if (textChunk.IsNullOrWhitespace())
-            {
-                continue;
-            }
-
-            var chunk = new DocumentChunk(
-                DocumentId: document.Id,
-                ChunkId: $"{document.Id}:{chunkIndex}",
-                Text: textChunk,
-                ChunkIndex: chunkIndex);
-
+            var rawText = document.Content.Substring(currPosition, readLength);
+            var chunk = new DocumentChunk(document.Id, $"{document.Id}:{chunkIndex}", rawText, chunkIndex);
             chunks.Add(chunk);
-            chunkIndex++;
 
-            if (start + readLength >= document.Content.Length)
+            if ((currPosition + readLength) >= document.Content.Length)
             {
                 break;
             }
-        }
 
+            currPosition += stepSize;
+            chunkIndex++;
+        }
 
         return chunks.AsReadOnly();
 
