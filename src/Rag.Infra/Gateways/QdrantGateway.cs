@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+
 using Rag.Infra.Qdrant;
 
 namespace Rag.Infra.Gateways;
@@ -7,11 +8,11 @@ public sealed class QdrantGateway : IQdrantGateway
 {
     private const string ClientName = "Qdrant";
 
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly HttpClient _httpClient;
 
-    public QdrantGateway(IHttpClientFactory httpClientFactory)
+    public QdrantGateway(HttpClient httpClient)
     {
-        _httpClientFactory = httpClientFactory;
+        _httpClient = httpClient;
     }
 
     public async Task UpsertAsync(
@@ -19,9 +20,9 @@ public sealed class QdrantGateway : IQdrantGateway
         QdrantUpsertRequest request,
         CancellationToken cancellationToken = default)
     {
-        var client = _httpClientFactory.CreateClient(ClientName);
 
-        var response = await client.PutAsJsonAsync(
+
+        var response = await _httpClient.PutAsJsonAsync(
             $"/collections/{collectionName}/points?wait=true",
             request,
             cancellationToken);
@@ -34,9 +35,8 @@ public sealed class QdrantGateway : IQdrantGateway
         QdrantQueryRequest request,
         CancellationToken cancellationToken = default)
     {
-        var client = _httpClientFactory.CreateClient(ClientName);
 
-        var response = await client.PostAsJsonAsync(
+        var response = await _httpClient.PostAsJsonAsync(
             $"/collections/{collectionName}/points/query",
             request,
             cancellationToken);

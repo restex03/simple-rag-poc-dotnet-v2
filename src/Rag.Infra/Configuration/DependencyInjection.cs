@@ -1,11 +1,19 @@
+using System.ClientModel;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+
+using OpenAI;
+using OpenAI.Chat;
+
 using OpenSearch.Client;
+
 using Rag.Core.Abstractions;
 using Rag.Infra.Gateways;
 using Rag.Infra.OpenSearch;
 using Rag.Infra.Qdrant;
 using Rag.Infra.Services;
+using Rag.Infra.Inference;
 
 namespace Rag.Infra.DependencyInjection;
 
@@ -61,6 +69,25 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddTransient<IEmbeddingGenerator, EmbeddingGenerator>();
+
+
+        var chatClientOptions = configuration.GetRequiredSection(ChatClientOptions.SectionName)
+            .Get<ChatClientOptions>()
+            ?? throw new InvalidOperationException(
+                "Chat client configuration is not found.");
+
+        services.AddSingleton(new ChatClient(
+            model: chatClientOptions.Model,
+            credential: new ApiKeyCredential(chatClientOptions.ApiKey),
+            options: new OpenAIClientOptions
+            {
+                Endpoint = new Uri($"{chatClientOptions.BaseAddress}/v1")
+            }));
+
+
+        services.AddSingleton<
+            IChatCompletionService,
+            OpenAiChatCompletionService>();
 
         return services;
     }

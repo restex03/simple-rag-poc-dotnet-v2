@@ -109,18 +109,24 @@ app.MapPost(
         AskRequest request,
         IEmbeddingGenerator embeddingGenerator,
         IVectorStore vectorStore,
+        IChatCompletionService chatCompletionService,
         CancellationToken cancellationToken) =>
     {
-        var embedding = await embeddingGenerator.GenerateAsync(
+
+        var res = await chatCompletionService.CompleteAsync(
             request.Question,
             cancellationToken);
 
-        var results = await vectorStore.SearchAsync(
-            embedding,
-            request.TopK,
-            cancellationToken);
+        // var embedding = await embeddingGenerator.GenerateAsync(
+        //     request.Question,
+        //     cancellationToken);
 
-        return Results.Ok(results);
+        // var results = await vectorStore.SearchAsync(
+        //     embedding,
+        //     request.TopK,
+        //     cancellationToken);
+
+        return Results.Ok(res);
     });
 
 
@@ -141,6 +147,10 @@ app.MapGet(
     });
 
 app.Run();
+
+
+
+
 
 public sealed record SearchRequest(
     string Query,
