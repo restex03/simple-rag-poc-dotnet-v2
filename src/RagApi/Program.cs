@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
+
 using Rag.Core.Abstractions;
 using Rag.Core.DependencyInjection;
 using Rag.Core.Models;
+using Rag.Core.Services;
 using Rag.Infra.DependencyInjection;
-using Rag.Infra.OpenSearch;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,7 +37,7 @@ builder.Services
         failureStatus: HealthStatus.Unhealthy,
         tags: ["ready"])
     .AddUrlGroup(
-        new Uri($"{qdrantOptions.BaseAddress}/healthz"),
+        new Uri($"http://{qdrantOptions.Host}:{qdrantOptions.HttpPort}/healthz"),
         name: "qdrant",
         failureStatus: HealthStatus.Unhealthy,
         tags: ["ready"])
@@ -50,10 +52,7 @@ builder.Services.AddRagInfra(builder.Configuration);
 
 var app = builder.Build();
 
-var initializer =
-    app.Services.GetRequiredService<OpenSearchIndexInitializer>();
 
-await initializer.InitializeAsync();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
@@ -65,6 +64,16 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     Predicate = check => check.Tags.Contains("ready")
 });
 
+
+
+
+await app.WaitForInfraReadiness(timeout: TimeSpan.FromSeconds(3));
+await app.InitializeQdrant();
+await app.InitializeOpenSearch();
+
+/// <summary>
+/// Ingest a new document.
+/// </summary>
 app.MapPost(
     "/documents",
     async (
@@ -83,53 +92,9 @@ app.MapPost(
         });
     });
 
-app.MapPost(
-    "/search",
-    async (
-        SearchRequest request,
-        IEmbeddingGenerator embeddingGenerator,
-        IVectorStore vectorStore,
-        CancellationToken cancellationToken) =>
-    {
-        var embedding = await embeddingGenerator.GenerateAsync(
-            request.Query,
-            cancellationToken);
-
-        var results = await vectorStore.SearchAsync(
-            embedding,
-            request.TopK,
-            cancellationToken);
-
-        return Results.Ok(results);
-    });
-
-app.MapPost(
-    "/ask",
-    async (
-        AskRequest request,
-        IEmbeddingGenerator embeddingGenerator,
-        IVectorStore vectorStore,
-        IChatCompletionService chatCompletionService,
-        CancellationToken cancellationToken) =>
-    {
-
-        var res = await chatCompletionService.CompleteAsync(
-            request.Question,
-            cancellationToken);
-
-        // var embedding = await embeddingGenerator.GenerateAsync(
-        //     request.Question,
-        //     cancellationToken);
-
-        // var results = await vectorStore.SearchAsync(
-        //     embedding,
-        //     request.TopK,
-        //     cancellationToken);
-
-        return Results.Ok(res);
-    });
-
-
+/// <summary>
+/// Get document by ID.
+/// </summary>
 app.MapGet(
     "/documents/{id}",
     async (
@@ -146,16 +111,52 @@ app.MapGet(
             : Results.Ok(document);
     });
 
+/// <summary>
+/// Search documents by query.string
+/// </summary>
+app.MapPost(
+    "/search",
+    async (
+        SearchRequest request,
+        IRagService ragService,
+        CancellationToken cancellationToken) =>
+    {
+        var results = await ragService.SearchAsync(
+            request.Query,
+            request.TopK,
+            request.minimumScore,
+            cancellationToken);
+
+        return Results.Ok(results);
+    });
+
+/// <summary>
+/// Ask a question to the RAG system based on ingested documents.
+/// </summary>
+app.MapPost(
+    "/ask",
+    async (
+        RagRequest request,
+        IRagService ragService,
+        CancellationToken cancellationToken) =>
+    {
+
+        var ragResult = await ragService.AnswerAsync(
+            request,
+            cancellationToken);
+
+        return Results.Ok(ragResult);
+    });
+
+
+
 app.Run();
 
 
 
 
 
-public sealed record SearchRequest(
-    string Query,
-    int TopK = 5);
 
-public sealed record AskRequest(
-    string Question,
-    int TopK = 5);
+
+
+

@@ -5,7 +5,7 @@ namespace Rag.Core.Chunking;
 
 public class CharacterChunkingStrategy : IChunkingStrategy
 {
-
+    private readonly string strategyId = "character-chunking-strategy";
     private readonly int _chunkSize;
     private readonly int _overlapSize;
 
@@ -54,7 +54,8 @@ public class CharacterChunkingStrategy : IChunkingStrategy
                 : document.Content.Length - currPosition;
 
             var rawText = document.Content.Substring(currPosition, readLength);
-            var chunk = new DocumentChunk(document.Id, $"{document.Id}:{chunkIndex}", rawText, chunkIndex);
+            var chunkId = $"{document.Id}_:_{strategyId}_:_{chunkIndex}";
+            var chunk = new DocumentChunk(document.Id, chunkId, rawText, chunkIndex);
             chunks.Add(chunk);
 
             if ((currPosition + readLength) >= document.Content.Length)

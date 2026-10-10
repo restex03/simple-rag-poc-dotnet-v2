@@ -11,9 +11,11 @@ using OpenSearch.Client;
 using Rag.Core.Abstractions;
 using Rag.Infra.Gateways;
 using Rag.Infra.OpenSearch;
-using Rag.Infra.Qdrant;
+using Rag.Infra.Vector;
 using Rag.Infra.Services;
 using Rag.Infra.Inference;
+
+using Qdrant.Client;
 
 namespace Rag.Infra.DependencyInjection;
 
@@ -40,20 +42,16 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IDocumentIndex, OpenSearchDocumentIndex>();
 
+
         // Qdrant
         var qdrantOptions = configuration
             .GetRequiredSection(QdrantOptions.SectionName)
             .Get<QdrantOptions>()
             ?? throw new InvalidOperationException(
                 "Qdrant configuration is not found.");
-
-        services.AddHttpClient<IQdrantGateway, QdrantGateway>(client =>
-        {
-            client.BaseAddress = new Uri(qdrantOptions.BaseAddress);
-            client.Timeout = TimeSpan.FromSeconds(30);
-        });
-
+        services.AddSingleton(new QdrantClient(qdrantOptions.Host, qdrantOptions.GrpcPort));
         services.AddTransient<IVectorStore, QdrantVectorStore>();
+
 
         // Ollama
         var ollamaOptions = configuration

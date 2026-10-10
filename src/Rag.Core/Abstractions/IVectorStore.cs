@@ -12,5 +12,12 @@ public interface IVectorStore
     Task<IReadOnlyList<SearchResult>> SearchAsync(
         float[] queryEmbedding,
         int topK,
+        double minimumScore,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<DocumentChunk>> GetChunksAsync(
+    string documentId,
+    int startIndex,
+    int endIndex,
+    CancellationToken cancellationToken = default);
 }

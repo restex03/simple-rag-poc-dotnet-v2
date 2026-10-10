@@ -1,8 +1,10 @@
+using Rag.Core.Models;
+
 namespace Rag.Core.Abstractions;
 
 public interface IChatCompletionService
 {
     Task<string> CompleteAsync(
-        string prompt,
+        RagPrompt prompt,
         CancellationToken cancellationToken = default);
 }
