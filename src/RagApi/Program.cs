@@ -135,7 +135,7 @@ app.MapPost(
 /// <summary>
 /// Search adjacent document chunks
 /// </summary>
-app.MapGet(
+app.MapPost(
     "/search/adjacent",
     async (
         [FromBody] SearchAdjacentRequest request,
