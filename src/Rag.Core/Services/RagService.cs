@@ -128,4 +128,28 @@ public sealed class RagService : IRagService
             cancellationToken);
     }
 
+    public async Task<IReadOnlyList<DocumentChunk>> SearchAdjacentAsync(
+        string documentId,
+        int chunkIndex,
+        int radius,
+        CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(documentId);
+        ArgumentOutOfRangeException.ThrowIfNegative(chunkIndex);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(radius);
+
+        if (radius > 20)
+            throw new ArgumentOutOfRangeException(
+                nameof(radius),
+                "The maximum allowed value for radius is 20.");
+
+        var results = await _vectorStore.GetChunksAsync(
+            documentId,
+            chunkIndex - radius >= 0 ? chunkIndex - radius : 0,
+            chunkIndex + radius,
+            cancellationToken);
+        return results;
+    }
+
+
 }

@@ -87,6 +87,9 @@ public static class ServiceCollectionExtensions
             IChatCompletionService,
             OpenAiChatCompletionService>();
 
+        services.AddScoped<RagToolDispatcher>();
+        services.AddScoped<RagAgent>();
+
         return services;
     }
 }

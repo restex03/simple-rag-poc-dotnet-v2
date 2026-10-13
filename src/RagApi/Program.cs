@@ -125,11 +125,32 @@ app.MapPost(
         var results = await ragService.SearchAsync(
             request.Query,
             request.TopK,
-            request.minimumScore,
+            request.MinimumScore,
             cancellationToken);
 
         return Results.Ok(results);
     });
+
+
+/// <summary>
+/// Search adjacent document chunks
+/// </summary>
+app.MapGet(
+    "/search/adjacent",
+    async (
+        [FromBody] SearchAdjacentRequest request,
+        [FromServices] IRagService ragService,
+        CancellationToken cancellationToken) =>
+    {
+        var results = await ragService.SearchAdjacentAsync(
+            request.DocumentId,
+            request.ChunkIndex,
+            request.Radius,
+            cancellationToken);
+
+        return Results.Ok(results);
+    });
+
 
 /// <summary>
 /// Ask a question to the RAG system based on ingested documents.
@@ -144,6 +165,26 @@ app.MapPost(
 
         var ragResult = await ragService.AnswerAsync(
             request,
+            cancellationToken);
+
+        return Results.Ok(ragResult);
+    });
+
+
+
+/// <summary>
+/// Ask a question to the RAG loop based on ingested documents.
+/// </summary>
+app.MapPost(
+    "/agenticAsk",
+    async (
+        [FromBody] RagRequest request,
+        [FromServices] RagAgent ragAgent,
+        CancellationToken cancellationToken) =>
+    {
+
+        var ragResult = await ragAgent.RunAsync(
+            request.Question,
             cancellationToken);
 
         return Results.Ok(ragResult);

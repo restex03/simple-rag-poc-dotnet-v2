@@ -17,4 +17,10 @@ public interface IRagService
         double minimumScore,
         CancellationToken cancellationToken = default);
 
+    public Task<IReadOnlyList<DocumentChunk>> SearchAdjacentAsync(
+        string documentId,
+        int chunkIndex,
+        int radius,
+        CancellationToken cancellationToken = default);
+
 }
