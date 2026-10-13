@@ -61,6 +61,11 @@ public static class ServiceCollectionExtensions
             ?? throw new InvalidOperationException(
                 "Ollama configuration is not found.");
 
+        services.AddOptions<EmbeddingModelOptions>()
+        .Bind(configuration.GetRequiredSection(EmbeddingModelOptions.SectionName))
+        .ValidateDataAnnotations()
+        .ValidateOnStart();
+
         services.AddHttpClient<IOllamaGateway, OllamaGateway>(client =>
         {
             client.BaseAddress = new Uri(ollamaOptions.BaseAddress);
@@ -111,6 +116,7 @@ public static class ServiceCollectionExtensions
                 sp.GetRequiredService<ChatClient>(),
                 sp.GetRequiredService<RagToolDispatcher>(),
                 RagToolDefinitions.All));
+
 
         return services;
     }
