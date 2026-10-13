@@ -88,7 +88,11 @@ public static class ServiceCollectionExtensions
             OpenAiChatCompletionService>();
 
         services.AddScoped<RagToolDispatcher>();
-        services.AddScoped<RagAgent>();
+        services.AddScoped<RagAgent>(sp =>
+            new RagAgent(
+                sp.GetRequiredService<ChatClient>(),
+                sp.GetRequiredService<RagToolDispatcher>(),
+                RagToolDefinitions.All));
 
         return services;
     }
