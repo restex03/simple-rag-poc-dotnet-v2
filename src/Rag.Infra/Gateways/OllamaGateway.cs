@@ -1,13 +1,17 @@
 using System.Net.Http.Json;
+
+using Microsoft.Extensions.Options;
 namespace Rag.Infra.Gateways;
 
 public sealed class OllamaGateway : IOllamaGateway
 {
     private readonly HttpClient _httpClient;
+    private readonly EmbeddingModelOptions _embeddingModelOptions;
 
-    public OllamaGateway(HttpClient httpClient)
+    public OllamaGateway(HttpClient httpClient, IOptions<EmbeddingModelOptions> embeddingModelOptions)
     {
         _httpClient = httpClient;
+        _embeddingModelOptions = embeddingModelOptions.Value;
     }
 
     public async Task<float[]> GenerateEmbeddingAsync(
@@ -16,7 +20,7 @@ public sealed class OllamaGateway : IOllamaGateway
     {
         var request = new
         {
-            model = "qwen3-embedding:0.6b",
+            model = _embeddingModelOptions.Model,
             input = text
         };
 
