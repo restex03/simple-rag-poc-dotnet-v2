@@ -60,7 +60,7 @@ public sealed class RagAgent
                 return string.Concat(completion.Content.Select(part => part.Text));
             }
 
-            if (completion.FinishReason == ChatFinishReason.ToolCalls)
+            if (completion.FinishReason != ChatFinishReason.ToolCalls)
             {
                 var errMessage = $"Unexpected finish reason: {completion.FinishReason}";
                 throw new InvalidOperationException(errMessage);
