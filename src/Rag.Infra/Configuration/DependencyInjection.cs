@@ -16,6 +16,7 @@ using Rag.Infra.Services;
 using Rag.Infra.Inference;
 
 using Qdrant.Client;
+using System.ClientModel.Primitives;
 
 namespace Rag.Infra.DependencyInjection;
 
@@ -74,13 +75,30 @@ public static class ServiceCollectionExtensions
             ?? throw new InvalidOperationException(
                 "Chat client configuration is not found.");
 
-        services.AddSingleton(new ChatClient(
-            model: chatClientOptions.Model,
-            credential: new ApiKeyCredential(chatClientOptions.ApiKey),
-            options: new OpenAIClientOptions
+        services.AddSingleton(sp =>
+        {
+
+            var handler = new OpenAiHttpLoggingHandler
             {
-                Endpoint = new Uri($"{chatClientOptions.BaseAddress}/v1")
-            }));
+                InnerHandler = new HttpClientHandler()
+            };
+
+            var httpClient = new HttpClient(handler);
+
+            var options = new OpenAIClientOptions
+            {
+                Endpoint = new Uri($"{chatClientOptions.BaseAddress.TrimEnd('/')}/v1"),
+
+                Transport = new HttpClientPipelineTransport(httpClient)
+            };
+
+            var result = new ChatClient(
+                model: chatClientOptions.Model,
+                credential: new ApiKeyCredential(chatClientOptions.ApiKey),
+                options: options);
+
+            return result;
+        });
 
 
         services.AddSingleton<
