@@ -6,7 +6,7 @@ public static class RagToolDefinitions
 
     public static readonly ChatTool SearchTool = ChatTool.CreateFunctionTool(
         functionName: "search_tool",
-        functionDescription: "Search indexed documents for information relevant to the users's question.",
+        functionDescription: "Search indexed documents for information relevant to the user's question.",
         functionParameters: BinaryData.FromString("""
         {
             "type": "object",
@@ -17,7 +17,7 @@ public static class RagToolDefinitions
                 },
                 "topK": {
                     "type": "integer",
-                    "description": "Number of results to retrieve"
+                    "description": "Maximum number of results to retrieve"
                 }
             },
             "required": ["query", "topK"],
@@ -43,7 +43,7 @@ public static class RagToolDefinitions
                 },
                 "radius": {
                     "type": "integer",
-                    "description": "Number of adjacent chunks to pull from each side"
+                    "description": "Number of neighboring chunks to retrieve on each side"
                 }
             },
             "required": ["documentId", "chunkIndex", "radius"],
