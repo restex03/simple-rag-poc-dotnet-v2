@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Text.Json;
 
 using OpenAI.Chat;
 
@@ -6,7 +7,8 @@ public sealed class RagAgent
 {
     private readonly ChatClient _chatClient;
     private readonly RagToolDispatcher _toolDispatcher;
-    private readonly ChatCompletionOptions _options;
+    private readonly IReadOnlyList<ChatTool> _tools;
+
 
     public RagAgent(
         ChatClient chatClient,
@@ -15,13 +17,7 @@ public sealed class RagAgent
     {
         _chatClient = chatClient;
         _toolDispatcher = toolDispatcher;
-
-        _options = new ChatCompletionOptions();
-
-        foreach (var tool in tools)
-        {
-            _options.Tools.Add(tool);
-        }
+        _tools = tools.ToList();
     }
 
     public async Task<string> RunAsync(
@@ -30,28 +26,50 @@ public sealed class RagAgent
     {
         var messages = new List<ChatMessage>
         {
+
+
             new SystemChatMessage("""
-                You are a document research assistant.
+                You are a personal research assistant with access to documents as well as chat transcripts.
+                Before doing anything, call search_tool with the User's question. 
 
-                Use the available tools to retrieve evidence.
-                If a search result appears relavant but is missing important context, 
-                retrieve adjacent chunks. 
+                Provide answers to the question using available tools search_tool, and search_adjacent_chunks. 
+                
+                Use search_tool to search through documents (including chat transcripts) for answers to the 
+                user's question. 
 
-                If retrieving adjacent chunks still does not provide grounded evidence,
-                simply respond "I don't have enough evidence to confidently answer the question."
+                Use search_adjacent_chunks if a result from search_tool appears relavant but lacks context. 
 
-                Do not invent facts.
-                Answer using the retrieved evidence.
+                Do not provide a final answer until you have received and examined the tool results.
+
+                Do not provide a final answer until you are confident in your findings. 
+
+                If you have already exhausted calls to search_tool and search_adjacent_chunks, and still
+                do not have enough context to confidently answer the question, 
+                you may reply "I don't have enough evidence to confidently answer the question."
             """),
 
-            new UserChatMessage(question)
+            new UserChatMessage(question),
+
         };
 
         const int maxIterations = 8;
 
         for (var iteration = 0; iteration < maxIterations; ++iteration)
         {
-            ChatCompletion completion = await _chatClient.CompleteChatAsync(messages, _options, ct);
+
+            var options = new ChatCompletionOptions
+            {
+                ToolChoice = iteration == 0
+                        ? ChatToolChoice.CreateRequiredChoice()
+                        : ChatToolChoice.CreateAutoChoice(),
+                MaxOutputTokenCount = 512,
+                Temperature = 0.2f
+            };
+
+            foreach (var tool in _tools)
+                options.Tools.Add(tool);
+
+            ChatCompletion completion = await _chatClient.CompleteChatAsync(messages, options, ct);
 
             messages.Add(new AssistantChatMessage(completion));
 
